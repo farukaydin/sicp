@@ -3,7 +3,7 @@
 (define (mc-eval exp env)
   (cond ((self-evaluating? exp) exp)
   ((variable? exp) (lookup-variable-value exp env))
-;  ((quoted? exp) (text-of-quotation exp))
+  ((quoted? exp) (text-of-quotation exp))
 ;  ((assignment? exp) (eval-assignment exp env))
 ;  ((definition? exp) (eval-definition exp env))
 ;  ((if? exp) (eval-if exp env))
@@ -73,5 +73,19 @@
 ; (lookup-variable-value 'a sample-env) => 3
 ; (lookup-variable-value 'b sample-env) => 4
 ; (lookup-variable-value 'c sample-env) => Unbound variable c
+
+(define (quoted? exp)
+  (tagged-list? exp 'quote))
+
+(define (text-of-quotation exp) (cadr exp))
+
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+      (eq? (car exp) tag)
+      false))
+
+; (quoted? '(quote (some text here))) => #t
+; (mc-eval '(quote (some text here)) the-empty-environment) => (mcons 'some (mcons 'text (mcons 'here '())))
+
 
 
