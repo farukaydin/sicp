@@ -4,7 +4,7 @@
   (cond ((self-evaluating? exp) exp)
   ((variable? exp) (lookup-variable-value exp env))
   ((quoted? exp) (text-of-quotation exp))
-;  ((assignment? exp) (eval-assignment exp env))
+  ((assignment? exp) (eval-assignment exp env))
 ;  ((definition? exp) (eval-definition exp env))
 ;  ((if? exp) (eval-if exp env))
 ;  ((lambda? exp)
@@ -87,5 +87,40 @@
 ; (quoted? '(quote (some text here))) => #t
 ; (mc-eval '(quote (some text here)) the-empty-environment) => (mcons 'some (mcons 'text (mcons 'here '())))
 
+(define (set-variable-value! var val env)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars)
+             (env-loop (enclosing-environment env)))
+            ((eq? var (car vars))
+             (set-car! vals val))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable -- SET!" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame)
+                (frame-values frame)))))
+  (env-loop env))
+
+; (define sample-env (extend-environment '(a b) '(3 4) the-empty-environment))
+; (set-variable-value! 'a 6)
+; (lookup-variable-value 'a sample-env) => 6
+
+; Assignments
+
+(define (assignment? exp)
+  (tagged-list? exp 'set!))
+(define (assignment-variable exp) (cadr exp))
+(define (assignment-value exp) (caddr exp))
+
+(define (eval-assignment exp env)
+  (set-variable-value! (assignment-variable exp)
+                       (mc-eval (assignment-value exp) env)
+                       env)
+  'ok)
+
+; (define sample-env (extend-environment '(a b) '(3 4) the-empty-environment))
+; (eval-assignment '(set! a 6) sample-env)
+; (lookup-variable-value 'a sample-env) => 6
 
 
