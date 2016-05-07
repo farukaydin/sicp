@@ -5,7 +5,7 @@
   ((variable? exp) (lookup-variable-value exp env))
   ((quoted? exp) (text-of-quotation exp))
   ((assignment? exp) (eval-assignment exp env))
-;  ((definition? exp) (eval-definition exp env))
+  ((definition? exp) (eval-definition exp env))
 ;  ((if? exp) (eval-if exp env))
 ;  ((lambda? exp)
 ;    (make-procedure (lambda-parameters exp)
@@ -123,4 +123,47 @@
 ; (eval-assignment '(set! a 6) sample-env)
 ; (lookup-variable-value 'a sample-env) => 6
 
+; Definitions
+
+(define (definition? exp)
+  (tagged-list? exp 'define))
+
+(define (definition-variable exp)
+  (if (symbol? (cadr exp))
+      (cadr exp)
+      (caadr exp)))
+
+; (define exp '(define (var parameter1 ... parametern) body))
+; (symbol? (cadr exp)) => #f
+; (caadr exp) => 'var
+
+; (define exp '(define var (lambda (parameter1 ... parametern) body)))
+; (symbol? (cadr exp)) => #t
+; (cadr exp) => 'var
+
+(define (definition-value exp)
+  (if (symbol? (cadr exp))
+      (caddr exp)
+      (make-lambda (cdadr exp)   ; formal parameters
+                   (cddr exp)))) ; body
+
+(define (make-lambda parameters body)
+  (cons 'lambda (cons parameters body)))
+
+(define (define-variable! var val env)
+  (let ((frame (first-frame env)))
+    (define (scan vars vals)
+      (cond ((null? vars)
+             (add-binding-to-frame! var val frame))
+            ((eq? var (car vars))
+             (set-car! vals val))
+            (else (scan (cdr vars) (cdr vals)))))
+    (scan (frame-variables frame)
+          (frame-values frame))))
+
+(define (eval-definition exp env)
+  (define-variable! (definition-variable exp)
+                    (mc-eval (definition-value exp) env)
+                    env)
+  'ok)
 
