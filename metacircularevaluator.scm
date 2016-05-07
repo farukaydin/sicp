@@ -6,7 +6,7 @@
   ((quoted? exp) (text-of-quotation exp))
   ((assignment? exp) (eval-assignment exp env))
   ((definition? exp) (eval-definition exp env))
-;  ((if? exp) (eval-if exp env))
+  ((if? exp) (eval-if exp env))
 ;  ((lambda? exp)
 ;    (make-procedure (lambda-parameters exp)
 ;      (lambda-body exp)
@@ -166,4 +166,27 @@
                     (mc-eval (definition-value exp) env)
                     env)
   'ok)
+
+; IF Statement
+
+(define (if? exp) (tagged-list? exp 'if))
+(define (if-predicate exp) (cadr exp))
+(define (if-consequent exp) (caddr exp))
+(define (if-alternative exp)
+  (if (not (null? (cdddr exp)))
+      (cadddr exp)
+      'false))
+
+(define (eval-if exp env)
+  (if (true? (mc-eval (if-predicate exp) env))
+      (mc-eval (if-consequent exp) env)
+      (mc-eval (if-alternative exp) env)))
+
+(define (true? x)
+  (not (eq? x false)))
+(define (false? x)
+  (eq? x false))
+
+; Because we didn't implement whole mc-eval procedure, we can test with basic condition.
+; (eval-if '(if "hello" "john" "doe") the-empty-environment) => "john"
 
