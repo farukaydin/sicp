@@ -11,9 +11,9 @@
     (make-procedure (lambda-parameters exp)
       (lambda-body exp)
       env))
-;  ((begin? exp) 
-;  (eval-sequence (begin-actions exp) env))
-;  ((cond? exp) (mc-eval (cond->if exp) env))
+  ((begin? exp)
+  (eval-sequence (begin-actions exp) env))
+  ((cond? exp) (mc-eval (cond->if exp) env))
 ;  ((application? exp)
 ;    (mc-apply (mc-eval (operator exp) env)
 ;      (list-of-values (operands exp) env)))
@@ -201,3 +201,51 @@
 
 ; (mc-eval '(lambda (a b c) (5)) the-empty-environment) =>
 ;   (mcons 'procedure (mcons (mcons 'a (mcons 'b (mcons 'c '()))) (mcons (mcons (mcons 5 '()) '()) (mcons '() '()))))
+
+; Evaluating Sequences
+
+(define (begin? exp) (tagged-list? exp 'begin))
+(define (begin-actions exp) (cdr exp))
+(define (last-exp? seq) (null? (cdr seq)))
+(define (first-exp seq) (car seq))
+(define (rest-exps seq) (cdr seq))
+
+
+(define (eval-sequence exps env)
+  (cond ((last-exp? exps) (mc-eval (first-exp exps) env))
+        (else (mc-eval (first-exp exps) env)
+              (eval-sequence (rest-exps exps) env))))
+
+(define (sequence->exp seq)
+  (cond ((null? seq) seq)
+        ((last-exp? seq) (first-exp seq))
+        (else (make-begin seq))))
+(define (make-begin seq) (cons 'begin seq))
+
+; Conditions
+
+(define (make-if predicate consequent alternative)
+  (list 'if predicate consequent alternative))
+
+(define (cond? exp) (tagged-list? exp 'cond))
+(define (cond-clauses exp) (cdr exp))
+(define (cond-else-clause? clause)
+  (eq? (cond-predicate clause) 'else))
+(define (cond-predicate clause) (car clause))
+(define (cond-actions clause) (cdr clause))
+(define (cond->if exp)
+  (expand-clauses (cond-clauses exp)))
+
+(define (expand-clauses clauses)
+  (if (null? clauses)
+      'false                          ; no else clause
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (if (cond-else-clause? first)
+            (if (null? rest)
+                (sequence->exp (cond-actions first))
+                (error "ELSE clause isn't last -- COND->IF"
+                       clauses))
+            (make-if (cond-predicate first)
+                     (sequence->exp (cond-actions first))
+                     (expand-clauses rest))))))
