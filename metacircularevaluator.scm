@@ -273,13 +273,13 @@
 (define (mc-apply procedure arguments)
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
-        ;((compound-procedure? procedure)
-        ; (eval-sequence
-        ;   (procedure-body procedure)
-        ;   (extend-environment
-        ;     (procedure-parameters procedure)
-        ;     arguments
-        ;     (procedure-environment procedure))))
+        ((compound-procedure? procedure)
+         (eval-sequence
+           (procedure-body procedure)
+           (extend-environment
+             (procedure-parameters procedure)
+             arguments
+             (procedure-environment procedure))))
         (else
          (error
           "Unknown procedure type -- APPLY" procedure))))
@@ -296,3 +296,12 @@
    (primitive-implementation proc) args))
 
 ; (mc-eval (+ 4 5) the-empty-environment) => 9
+
+; Compound Procedures
+
+(define (compound-procedure? p)
+  (tagged-list? p 'procedure))
+
+(define (procedure-parameters p) (cadr p))
+(define (procedure-body p) (caddr p))
+(define (procedure-environment p) (cadddr p))
