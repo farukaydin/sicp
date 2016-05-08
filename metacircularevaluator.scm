@@ -7,10 +7,10 @@
   ((assignment? exp) (eval-assignment exp env))
   ((definition? exp) (eval-definition exp env))
   ((if? exp) (eval-if exp env))
-;  ((lambda? exp)
-;    (make-procedure (lambda-parameters exp)
-;      (lambda-body exp)
-;      env))
+  ((lambda? exp)
+    (make-procedure (lambda-parameters exp)
+      (lambda-body exp)
+      env))
 ;  ((begin? exp) 
 ;  (eval-sequence (begin-actions exp) env))
 ;  ((cond? exp) (mc-eval (cond->if exp) env))
@@ -190,3 +190,14 @@
 ; Because we didn't implement whole mc-eval procedure, we can test with basic condition.
 ; (eval-if '(if "hello" "john" "doe") the-empty-environment) => "john"
 
+; Lambda
+
+(define (lambda? exp) (tagged-list? exp 'lambda))
+(define (lambda-parameters exp) (cadr exp))
+(define (lambda-body exp) (cddr exp))
+
+(define (make-procedure parameters body env)
+  (list 'procedure parameters body env))
+
+; (mc-eval '(lambda (a b c) (5)) the-empty-environment) =>
+;   (mcons 'procedure (mcons (mcons 'a (mcons 'b (mcons 'c '()))) (mcons (mcons (mcons 5 '()) '()) (mcons '() '()))))
