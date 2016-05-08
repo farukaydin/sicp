@@ -1,5 +1,7 @@
 #lang planet neil/sicp
 
+; Eval
+
 (define (mc-eval exp env)
   (cond ((self-evaluating? exp) exp)
   ((variable? exp) (lookup-variable-value exp env))
@@ -14,9 +16,9 @@
   ((begin? exp)
   (eval-sequence (begin-actions exp) env))
   ((cond? exp) (mc-eval (cond->if exp) env))
-;  ((application? exp)
-;    (mc-apply (mc-eval (operator exp) env)
-;      (list-of-values (operands exp) env)))
+  ((application? exp)
+    (mc-apply (mc-eval (operator exp) env)
+      (list-of-values (operands exp) env)))
   (else
     (error "Unknown expression type -- EVAL" exp))))
 
@@ -249,3 +251,48 @@
             (make-if (cond-predicate first)
                      (sequence->exp (cond-actions first))
                      (expand-clauses rest))))))
+
+; Procedure Application
+
+(define (application? exp) (pair? exp))
+(define (operator exp) (car exp))
+(define (operands exp) (cdr exp))
+
+(define (no-operands? ops) (null? ops))
+(define (first-operand ops) (car ops))
+(define (rest-operands ops) (cdr ops))
+
+(define (list-of-values exps env)
+  (if (no-operands? exps)
+      '()
+      (cons (mc-eval (first-operand exps) env)
+        (list-of-values (rest-operands exps) env))))
+
+; Apply
+
+(define (mc-apply procedure arguments)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure procedure arguments))
+        ;((compound-procedure? procedure)
+        ; (eval-sequence
+        ;   (procedure-body procedure)
+        ;   (extend-environment
+        ;     (procedure-parameters procedure)
+        ;     arguments
+        ;     (procedure-environment procedure))))
+        (else
+         (error
+          "Unknown procedure type -- APPLY" procedure))))
+
+(define (primitive-procedure? proc)
+  (tagged-list? proc 'primitive))
+
+(define (primitive-implementation proc) (cadr proc))
+
+(define apply-in-underlying-scheme apply)
+
+(define (apply-primitive-procedure proc args)
+  (apply-in-underlying-scheme
+   (primitive-implementation proc) args))
+
+; (mc-eval (+ 4 5) the-empty-environment) => 9
