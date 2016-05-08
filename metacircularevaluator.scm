@@ -313,6 +313,11 @@
         (list 'cdr cdr)
         (list 'cons cons)
         (list 'null? null?)
+        (list '* *)
+        (list '= =)
+        (list '- -)
+        (list '+ +)
+        (list '/ /)
         ))
 
 (define (primitive-procedure-names)
@@ -332,3 +337,22 @@
     (define-variable! 'false false initial-env)
     initial-env))
 (define the-global-environment (setup-environment))
+
+(define input-prompt ";;; M-Eval input:")
+(define output-prompt ";;; M-Eval value:")
+
+(define (prompt-for-input string)
+  (newline) (newline) (display string) (newline))
+
+(define (announce-output string)
+  (newline) (display string) (newline))
+
+(define (driver-loop)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+    (let ((output (mc-eval input the-global-environment)))
+      (announce-output output-prompt)
+      (display output)))
+  (driver-loop))
+
+(driver-loop)
